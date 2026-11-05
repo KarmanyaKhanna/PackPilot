@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "logsum"
+version = "0.1.0"
+description = "Summarize log severities from standard input"
+requires-python = ">=3.12"
+
+[project.scripts]
+logsum = "logsum.cli:main"
+
+[tool.setuptools]
+include-package-data = false
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+logsum = ["data/*.json"]
