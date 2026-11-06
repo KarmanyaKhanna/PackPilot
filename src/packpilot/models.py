@@ -11,6 +11,8 @@ class ExpectedResult:
 
 @dataclass(frozen=True)
 class TestCase:
+    __test__ = False
+
     name: str
     args: list[str]
     stdin: str
@@ -19,6 +21,8 @@ class TestCase:
 
 @dataclass(frozen=True)
 class TestSuite:
+    __test__ = False
+
     schema_version: int
     entrypoint: str
     cases: list[TestCase]
@@ -42,6 +46,7 @@ class CaseResult:
     duration_seconds: float
     status: str
     reason: str | None = None
+    detail: str | None = None
 
 @dataclass
 class VerificationReport:
