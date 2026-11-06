@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from pathlib import Path
 
 @dataclass(frozen=True)
 class ExpectedResult:
@@ -54,3 +55,9 @@ class VerificationReport:
     cases: list[CaseResult] = field(default_factory=list)
     summary: dict[str, int] = field(default_factory=dict)
 
+@dataclass(frozen=True)
+class RunTarget:
+    command_prefix: list[str]
+    cwd: Path
+    env: dict[str, str]
+    

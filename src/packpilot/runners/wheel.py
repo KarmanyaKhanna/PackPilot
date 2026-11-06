@@ -1,0 +1,75 @@
+from __future__ import annotations
+
+import os
+import sys
+import tempfile
+from collections.abc import Iterator
+from contextlib import contextmanager
+from pathlib import Path
+
+from packpilot.models import RunTarget
+from packpilot.process import run_command
+
+SETUP_TIMEOUT_SECONDS = 120
+_REMOVED_ENV_VARS = ("PYTHONPATH", "PYTHONHOME")
+
+class WheelNotFoundError(ValueError):
+    pass
+
+class WheelInstallError(RuntimeError):
+    pass
+
+@contextmanager
+def installed_wheel(wheel_path: Path, entrypoint: str) -> Iterator[RunTarget]:
+    wheel = wheel_path.resolve()
+    if not wheel.is_file():
+        raise WheelNotFoundError(f"wheel file not found: {wheel}")
+
+    env = _clean_environment()
+
+    with tempfile.TemporaryDirectory(prefix="packpilot-") as temp_dir:
+        root = Path(temp_dir).resolve()
+        venv_dir = root / "venv"
+        work_dir = root / "work"
+        work_dir.mkdir()
+
+        _run_setup_step(
+            "create venv",
+            [sys.executable, "-m", "venv", str(venv_dir)],
+            cwd=work_dir,
+            env=env,
+        )
+        _run_setup_step(
+            "install wheel",
+            [
+                str(venv_dir / "bin" / "python"),
+                "-m",
+                "pip",
+                "install",
+                "--no-index",
+                "--no-deps",
+                str(wheel),
+            ],
+            cwd=work_dir,
+            env=env,
+        )
+
+        yield RunTarget(
+            command_prefix=[str(venv_dir / "bin" / entrypoint)],
+            cwd=work_dir,
+            env=env,
+        )
+
+def _clean_environment() -> dict[str, str]:
+    env = dict(os.environ)
+    for name in _REMOVED_ENV_VARS:
+        env.pop(name, None)
+    return env
+
+def _run_setup_step(step: str, args: list[str], cwd: Path, env: dict[str, str]) -> None:
+    result = run_command(args, stdin="", timeout_seconds=SETUP_TIMEOUT_SECONDS, cwd=cwd, env=env)
+    if result.failure is not None or result.exit_code != 0:
+        problem = result.failure or f"exit code {result.exit_code}"
+        raise WheelInstallError(
+            f"{step} failed ({problem})\nstdout:\n{result.stdout}\nstderr:\n{result.stderr}"
+        )
