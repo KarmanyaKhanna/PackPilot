@@ -43,31 +43,10 @@ LOGSUM_SUITE = TestSuite(
     ],
 )
 
-
-@pytest.fixture(scope="session")
-def logsum_wheel(tmp_path_factory):
-    build_root = tmp_path_factory.mktemp("logsum-build")
-    source_copy = build_root / "source"
-    shutil.copytree(
-        LOGSUM_SOURCE,
-        source_copy,
-        ignore=shutil.ignore_patterns("build", "dist", "*.egg-info", "__pycache__"),
-    )
-    output_dir = build_root / "dist"
-    subprocess.run(
-        [sys.executable, "-m", "build", "--wheel", "--outdir", str(output_dir), str(source_copy)],
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    return next(output_dir.glob("*.whl"))
-
-
 def test_real_wheel_passes_the_behavior_suite(logsum_wheel):
     with installed_wheel(logsum_wheel, LOGSUM_SUITE.entrypoint) as target:
         report = run_suite(LOGSUM_SUITE, target.command_prefix, cwd=target.cwd, env=target.env)
     assert report.summary == {"passed": 2, "failed": 0}
-
 
 def test_installed_app_does_not_import_from_the_checkout(logsum_wheel, monkeypatch):
     monkeypatch.setenv("PYTHONPATH", str(LOGSUM_SOURCE / "src"))
@@ -82,7 +61,6 @@ def test_installed_app_does_not_import_from_the_checkout(logsum_wheel, monkeypat
         )
     assert result.exit_code == 0
     assert Path(result.stdout.strip()).is_relative_to(venv_bin.parent)
-
 
 def test_missing_entrypoint_does_not_fall_back_to_a_host_command(logsum_wheel):
     assert shutil.which("ls") is not None
@@ -104,12 +82,10 @@ def test_missing_entrypoint_does_not_fall_back_to_a_host_command(logsum_wheel):
     assert report.summary == {"passed": 0, "failed": 1}
     assert report.cases[0].reason == COMMAND_NOT_FOUND
 
-
 def test_missing_wheel_is_rejected(tmp_path):
     with pytest.raises(WheelNotFoundError, match="not found"):
         with installed_wheel(tmp_path / "missing.whl", "logsum"):
             pytest.fail("should not reach the body")
-
 
 def test_corrupt_wheel_reports_the_install_failure(tmp_path):
     wheel = tmp_path / "logsum-0.1.0-py3-none-any.whl"
@@ -119,13 +95,11 @@ def test_corrupt_wheel_reports_the_install_failure(tmp_path):
             pytest.fail("should not reach the body")
     assert "stderr:" in str(error.value)
 
-
 def test_temp_directory_is_removed_after_success(logsum_wheel):
     with installed_wheel(logsum_wheel, "logsum") as target:
         root = target.cwd.parent
         assert root.exists()
     assert not root.exists()
-
 
 def test_temp_directory_is_removed_after_an_error(logsum_wheel):
     with pytest.raises(RuntimeError, match="boom"):

@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "entrypoint": "logsum",
+  "cases": [
+    {
+      "name": "help",
+      "args": ["--help"],
+      "stdin": "",
+      "timeout_seconds": 5,
+      "expect": { "exit_code": 0, "stdout_contains": "usage" }
+    },
+    {
+      "name": "version",
+      "args": ["--version"],
+      "stdin": "",
+      "timeout_seconds": 5,
+      "expect": { "exit_code": 0, "stdout_contains": "logsum 0.1.0" }
+    },
+    {
+      "name": "valid_input",
+      "args": ["--json"],
+      "stdin": "INFO service started\nERROR connection failed\nWARNING retrying request\nERROR request abandoned\n",
+      "timeout_seconds": 5,
+      "expect": {
+        "exit_code": 0,
+        "stdout_json": { "INFO": 1, "WARNING": 1, "ERROR": 2 }
+      }
+    },
+    {
+      "name": "empty_input",
+      "args": ["--json"],
+      "stdin": "",
+      "timeout_seconds": 5,
+      "expect": {
+        "exit_code": 0,
+        "stdout_json": { "INFO": 0, "WARNING": 0, "ERROR": 0 }
+      }
+    },
+    {
+      "name": "blank_lines_ignored",
+      "args": ["--json"],
+      "stdin": "\nINFO service started\n\n",
+      "timeout_seconds": 5,
+      "expect": {
+        "exit_code": 0,
+        "stdout_json": { "INFO": 1, "WARNING": 0, "ERROR": 0 }
+      }
+    },
+    {
+      "name": "invalid_severity",
+      "args": ["--json"],
+      "stdin": "INVALID example\n",
+      "timeout_seconds": 5,
+      "expect": { "exit_code": 2, "stderr_contains": "line 1" }
+    },
+    {
+      "name": "malformed_line_reports_its_number",
+      "args": ["--json"],
+      "stdin": "INFO service started\nERROR\n",
+      "timeout_seconds": 5,
+      "expect": { "exit_code": 2, "stderr_contains": "line 2" }
+    }
+  ]
+}
