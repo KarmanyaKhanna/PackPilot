@@ -76,3 +76,29 @@ def test_rejects_boolean_exit_code(tmp_path):
     path = write_suite(tmp_path, data)
     with pytest.raises(SuiteValidationError):
         load_suite(path)
+
+@pytest.mark.parametrize("version", [True, 1.0, "1", 2])
+def test_rejects_invalid_schema_version(tmp_path, version):
+    data = json.loads(json.dumps(VALID_SUITE))
+    data["schema_version"] = version
+    path = write_suite(tmp_path, data)
+    with pytest.raises(SuiteValidationError, match="schema version"):
+        load_suite(path)
+
+@pytest.mark.parametrize(
+    "entrypoint",
+    ["../../bin/sh", "bin/logsum", "/bin/sh", "..", "-logsum", "logsum\n", "log sum", ""],
+)
+def test_rejects_entrypoint_that_is_not_a_plain_name(tmp_path, entrypoint):
+    data = json.loads(json.dumps(VALID_SUITE))
+    data["entrypoint"] = entrypoint
+    path = write_suite(tmp_path, data)
+    with pytest.raises(SuiteValidationError, match="entrypoint"):
+        load_suite(path)
+
+@pytest.mark.parametrize("entrypoint", ["logsum", "log-sum", "log_sum", "logsum.cli", "logsum2"])
+def test_accepts_plain_entrypoint_names(tmp_path, entrypoint):
+    data = json.loads(json.dumps(VALID_SUITE))
+    data["entrypoint"] = entrypoint
+    path = write_suite(tmp_path, data)
+    assert load_suite(path).entrypoint == entrypoint

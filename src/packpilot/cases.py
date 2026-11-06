@@ -2,11 +2,14 @@ from __future__ import annotations
 
 import json
 import math
+import re
 from pathlib import Path
 
 from packpilot.models import ExpectedResult, TestCase, TestSuite
 
 SUPPORTED_SCHEMA_VERSION = 1
+
+_PLAIN_NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*")
 
 _CASE_ALLOWED_KEYS = {"name", "args", "stdin", "timeout_seconds", "expect"}
 _EXPECT_ALLOWED_KEYS = {"exit_code", "stdout_json", "stdout_contains", "stderr_contains"}
@@ -40,14 +43,20 @@ def _parse_suite(raw: dict) -> TestSuite:
         raise SuiteValidationError(f"suite is missing required fields: {sorted(missing)}")
 
     schema_version = raw["schema_version"]
-    if schema_version != SUPPORTED_SCHEMA_VERSION:
+    if (
+        isinstance(schema_version, bool)
+        or not isinstance(schema_version, int)
+        or schema_version != SUPPORTED_SCHEMA_VERSION
+    ):
         raise SuiteValidationError(
             f"unsupported schema version {schema_version!r}, expected {SUPPORTED_SCHEMA_VERSION}"
         )
 
     entrypoint = raw["entrypoint"]
-    if not isinstance(entrypoint, str) or not entrypoint.strip():
-        raise SuiteValidationError("suite field 'entrypoint' must be a nonempty string")
+    if not isinstance(entrypoint, str) or not _PLAIN_NAME.fullmatch(entrypoint):
+        raise SuiteValidationError(
+            f"suite field 'entrypoint' must be a plain command name, got {entrypoint!r}"
+        )
 
     raw_cases = raw["cases"]
     if not isinstance(raw_cases, list) or not raw_cases:

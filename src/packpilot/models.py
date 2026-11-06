@@ -25,10 +25,11 @@ class TestSuite:
 
 @dataclass
 class ProcessResult:
-    exit_code: int
+    exit_code: int | None
     stdout: str
     stderr: str
     duration_seconds: float
+    failure: str | None = None
 
 @dataclass
 class CaseResult:
