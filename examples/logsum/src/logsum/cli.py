@@ -11,7 +11,7 @@ def load_allowed_levels() -> list[str]:
         with resource.open("r", encoding="utf-8") as f:
             return json.load(f)
     except (FileNotFoundError, ModuleNotFoundError) as e:
-        print(f"logsum: applcation resource error: {e}", file=sys.stderr)
+        print(f"logsum: application resource error: {e}", file=sys.stderr)
         raise SystemExit(1)
 
 def main() -> int:

@@ -1,6 +1,7 @@
 import shutil
 import subprocess
 import sys
+import hashlib
 from pathlib import Path
 
 import pytest
@@ -8,7 +9,13 @@ import pytest
 from packpilot.engine import run_suite
 from packpilot.models import ExpectedResult, TestCase, TestSuite
 from packpilot.process import COMMAND_NOT_FOUND, run_command
-from packpilot.runners.wheel import WheelInstallError, WheelNotFoundError, installed_wheel
+from packpilot.runners.wheel import (
+    VenvCreationError,
+    WheelInstallError,
+    WheelNotFoundError,
+    describe_wheel,
+    installed_wheel,
+)
 
 LOGSUM_SOURCE = Path(__file__).resolve().parents[1] / "examples" / "logsum"
 
@@ -126,3 +133,23 @@ def test_temp_directory_is_removed_after_an_error(logsum_wheel):
             root = target.cwd.parent
             raise RuntimeError("boom")
     assert not root.exists()
+
+def test_describe_wheel_records_the_filename_and_hash(tmp_path):
+    wheel = tmp_path / "sample-0.1.0-py3-none-any.whl"
+    wheel.write_bytes(b"sample bytes")
+    assert describe_wheel(wheel) == {
+        "wheel_filename": wheel.name,
+        "wheel_sha256": hashlib.sha256(b"sample bytes").hexdigest(),
+    }
+
+def test_describe_wheel_rejects_a_missing_file(tmp_path):
+    with pytest.raises(WheelNotFoundError, match="not found"):
+        describe_wheel(tmp_path / "missing.whl")
+
+def test_venv_failure_is_a_different_error_from_install_failure(tmp_path, monkeypatch):
+    wheel = tmp_path / "sample-0.1.0-py3-none-any.whl"
+    wheel.write_bytes(b"sample bytes")
+    monkeypatch.setattr(sys, "executable", str(tmp_path / "no-such-python"))
+    with pytest.raises(VenvCreationError, match="create venv failed"):
+        with installed_wheel(wheel, "logsum"):
+            pytest.fail("should not reach the body")

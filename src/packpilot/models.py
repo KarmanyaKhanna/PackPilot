@@ -60,4 +60,10 @@ class RunTarget:
     command_prefix: list[str]
     cwd: Path
     env: dict[str, str]
-    
+
+@dataclass
+class SetupResult:
+    status: str
+    duration_seconds: float
+    reason: str | None = None
+    detail: str | None = None
