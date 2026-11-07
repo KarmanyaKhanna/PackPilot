@@ -15,8 +15,10 @@ _CASE_ALLOWED_KEYS = {"name", "args", "stdin", "timeout_seconds", "expect"}
 _EXPECT_ALLOWED_KEYS = {"exit_code", "stdout_json", "stdout_contains", "stderr_contains"}
 _SUITE_ALLOWED_KEYS = {"schema_version", "entrypoint", "cases"}
 
+
 class SuiteValidationError(ValueError):
     pass
+
 
 def load_suite(path: Path) -> TestSuite:
     try:
@@ -30,6 +32,7 @@ def load_suite(path: Path) -> TestSuite:
         raise SuiteValidationError(f"suite file {path} is not valid JSON: {e}") from e
 
     return _parse_suite(raw)
+
 
 def _parse_suite(raw: dict) -> TestSuite:
     if not isinstance(raw, dict):
@@ -70,7 +73,8 @@ def _parse_suite(raw: dict) -> TestSuite:
             raise SuiteValidationError(f"duplicate case name: {case.name!r}")
         seen_names.add(case.name)
 
-    return TestSuite(schema_version = schema_version, entrypoint=entrypoint, cases=cases)
+    return TestSuite(schema_version=schema_version, entrypoint=entrypoint, cases=cases)
+
 
 def _parse_case(index: int, raw_case: dict) -> TestCase:
     label = f"cases[{index}]"
@@ -99,18 +103,22 @@ def _parse_case(index: int, raw_case: dict) -> TestCase:
         raise SuiteValidationError(f"{label} field 'stdin' must be a string")
 
     timeout_seconds = raw_case["timeout_seconds"]
-    if (isinstance(timeout_seconds, bool) or not isinstance(timeout_seconds, (int, float)) or not math.isfinite(timeout_seconds) or timeout_seconds <= 0):
-        raise SuiteValidationError(f"{label} field 'timeout_seconds' must be a positive finite number")
+    if (
+        isinstance(timeout_seconds, bool)
+        or not isinstance(timeout_seconds, (int, float))
+        or not math.isfinite(timeout_seconds)
+        or timeout_seconds <= 0
+    ):
+        raise SuiteValidationError(
+            f"{label} field 'timeout_seconds' must be a positive finite number"
+        )
 
     expect = _parse_expect(label, raw_case["expect"])
 
     return TestCase(
-        name=name,
-        args=args,
-        stdin=stdin,
-        timeout_seconds=timeout_seconds,
-        expect=expect
+        name=name, args=args, stdin=stdin, timeout_seconds=timeout_seconds, expect=expect
     )
+
 
 def _parse_expect(case_label: str, raw_expect: dict) -> ExpectedResult:
     label = f"{case_label} field 'expect'"
@@ -144,5 +152,5 @@ def _parse_expect(case_label: str, raw_expect: dict) -> ExpectedResult:
         exit_code=exit_code,
         stdout_json=stdout_json,
         stdout_contains=stdout_contains,
-        stderr_contains=stderr_contains
+        stderr_contains=stderr_contains,
     )

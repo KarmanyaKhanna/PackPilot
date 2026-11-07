@@ -1,7 +1,8 @@
 import json
+
 import pytest
 
-from packpilot.cases import load_suite, SuiteValidationError
+from packpilot.cases import SuiteValidationError, load_suite
 
 VALID_SUITE = {
     "schema_version": 1,
@@ -17,10 +18,12 @@ VALID_SUITE = {
     ],
 }
 
+
 def write_suite(tmp_path, data):
     path = tmp_path / "cases.json"
     path.write_text(json.dumps(data), encoding="utf-8")
     return path
+
 
 def test_load_valid_suite(tmp_path):
     path = write_suite(tmp_path, VALID_SUITE)
@@ -30,6 +33,7 @@ def test_load_valid_suite(tmp_path):
     assert len(suite.cases) == 1
     assert suite.cases[0].name == "valid_input"
     assert suite.cases[0].expect.exit_code == 0
+
 
 def test_rejects_malformed_json(tmp_path):
     path = tmp_path / "cases.json"
@@ -77,6 +81,7 @@ def test_rejects_boolean_exit_code(tmp_path):
     with pytest.raises(SuiteValidationError):
         load_suite(path)
 
+
 @pytest.mark.parametrize("version", [True, 1.0, "1", 2])
 def test_rejects_invalid_schema_version(tmp_path, version):
     data = json.loads(json.dumps(VALID_SUITE))
@@ -84,6 +89,7 @@ def test_rejects_invalid_schema_version(tmp_path, version):
     path = write_suite(tmp_path, data)
     with pytest.raises(SuiteValidationError, match="schema version"):
         load_suite(path)
+
 
 @pytest.mark.parametrize(
     "entrypoint",
@@ -95,6 +101,7 @@ def test_rejects_entrypoint_that_is_not_a_plain_name(tmp_path, entrypoint):
     path = write_suite(tmp_path, data)
     with pytest.raises(SuiteValidationError, match="entrypoint"):
         load_suite(path)
+
 
 @pytest.mark.parametrize("entrypoint", ["logsum", "log-sum", "log_sum", "logsum.cli", "logsum2"])
 def test_accepts_plain_entrypoint_names(tmp_path, entrypoint):

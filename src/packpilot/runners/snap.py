@@ -14,14 +14,17 @@ _SNAP_TARGET = re.compile(r"([a-z0-9][a-z0-9-]*)\.([a-zA-Z0-9][a-zA-Z0-9-]*)")
 _INSTALLED_LINE = re.compile(r"^installed:\s+(\S+)\s+\((\S+)\)", re.MULTILINE)
 _CONFINEMENT_LINE = re.compile(r"^\s*confinement:\s+(\S+)", re.MULTILINE)
 
+
 class SnapTargetError(ValueError):
     pass
+
 
 def parse_snap_target(target: str) -> tuple[str, str]:
     match = _SNAP_TARGET.fullmatch(target)
     if match is None:
         raise SnapTargetError(f"snap target must look like snap-name.app-name, got {target!r}")
     return match.group(1), match.group(2)
+
 
 def parse_snap_info(snap_name: str, info: str) -> dict[str, str]:
     installed = _INSTALLED_LINE.search(info)
@@ -35,6 +38,7 @@ def parse_snap_info(snap_name: str, info: str) -> dict[str, str]:
         "snap_confinement": confinement.group(1) if confinement is not None else "unknown",
     }
 
+
 def describe_snap(target: str) -> dict[str, str]:
     snap_name, app_name = parse_snap_target(target)
     result = run_command(
@@ -47,6 +51,7 @@ def describe_snap(target: str) -> dict[str, str]:
     if result.exit_code != 0:
         raise SnapTargetError(f"snap {snap_name!r} is not available: {result.stderr.strip()}")
     return {**parse_snap_info(snap_name, result.stdout), "snap_app": app_name}
+
 
 @contextmanager
 def installed_snap(target: str) -> Iterator[RunTarget]:

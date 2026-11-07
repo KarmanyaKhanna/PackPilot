@@ -1,7 +1,6 @@
-import shutil
-import subprocess
-import sys
 import hashlib
+import shutil
+import sys
 from pathlib import Path
 
 import pytest
@@ -43,10 +42,12 @@ LOGSUM_SUITE = TestSuite(
     ],
 )
 
+
 def test_real_wheel_passes_the_behavior_suite(logsum_wheel):
     with installed_wheel(logsum_wheel, LOGSUM_SUITE.entrypoint) as target:
         report = run_suite(LOGSUM_SUITE, target.command_prefix, cwd=target.cwd, env=target.env)
     assert report.summary == {"passed": 2, "failed": 0}
+
 
 def test_installed_app_does_not_import_from_the_checkout(logsum_wheel, monkeypatch):
     monkeypatch.setenv("PYTHONPATH", str(LOGSUM_SOURCE / "src"))
@@ -61,6 +62,7 @@ def test_installed_app_does_not_import_from_the_checkout(logsum_wheel, monkeypat
         )
     assert result.exit_code == 0
     assert Path(result.stdout.strip()).is_relative_to(venv_bin.parent)
+
 
 def test_missing_entrypoint_does_not_fall_back_to_a_host_command(logsum_wheel):
     assert shutil.which("ls") is not None
@@ -82,10 +84,12 @@ def test_missing_entrypoint_does_not_fall_back_to_a_host_command(logsum_wheel):
     assert report.summary == {"passed": 0, "failed": 1}
     assert report.cases[0].reason == COMMAND_NOT_FOUND
 
+
 def test_missing_wheel_is_rejected(tmp_path):
     with pytest.raises(WheelNotFoundError, match="not found"):
         with installed_wheel(tmp_path / "missing.whl", "logsum"):
             pytest.fail("should not reach the body")
+
 
 def test_corrupt_wheel_reports_the_install_failure(tmp_path):
     wheel = tmp_path / "logsum-0.1.0-py3-none-any.whl"
@@ -95,11 +99,13 @@ def test_corrupt_wheel_reports_the_install_failure(tmp_path):
             pytest.fail("should not reach the body")
     assert "stderr:" in str(error.value)
 
+
 def test_temp_directory_is_removed_after_success(logsum_wheel):
     with installed_wheel(logsum_wheel, "logsum") as target:
         root = target.cwd.parent
         assert root.exists()
     assert not root.exists()
+
 
 def test_temp_directory_is_removed_after_an_error(logsum_wheel):
     with pytest.raises(RuntimeError, match="boom"):
@@ -107,6 +113,7 @@ def test_temp_directory_is_removed_after_an_error(logsum_wheel):
             root = target.cwd.parent
             raise RuntimeError("boom")
     assert not root.exists()
+
 
 def test_describe_wheel_records_the_filename_and_hash(tmp_path):
     wheel = tmp_path / "sample-0.1.0-py3-none-any.whl"
@@ -116,9 +123,11 @@ def test_describe_wheel_records_the_filename_and_hash(tmp_path):
         "wheel_sha256": hashlib.sha256(b"sample bytes").hexdigest(),
     }
 
+
 def test_describe_wheel_rejects_a_missing_file(tmp_path):
     with pytest.raises(WheelNotFoundError, match="not found"):
         describe_wheel(tmp_path / "missing.whl")
+
 
 def test_venv_failure_is_a_different_error_from_install_failure(tmp_path, monkeypatch):
     wheel = tmp_path / "sample-0.1.0-py3-none-any.whl"

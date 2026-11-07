@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+import hashlib
 import sys
 import tempfile
-import hashlib
 from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
@@ -13,14 +13,18 @@ from packpilot.process import clean_environment, run_command
 INSTALL_FAILED = "install_failed"
 SETUP_TIMEOUT_SECONDS = 120
 
+
 class WheelNotFoundError(ValueError):
     pass
+
 
 class WheelInstallError(RuntimeError):
     pass
 
+
 class VenvCreationError(RuntimeError):
     pass
+
 
 def describe_wheel(wheel_path: Path) -> dict[str, str]:
     wheel = wheel_path.resolve()
@@ -29,6 +33,7 @@ def describe_wheel(wheel_path: Path) -> dict[str, str]:
     with wheel.open("rb") as f:
         digest = hashlib.file_digest(f, "sha256")
     return {"wheel_filename": wheel.name, "wheel_sha256": digest.hexdigest()}
+
 
 @contextmanager
 def installed_wheel(wheel_path: Path, entrypoint: str) -> Iterator[RunTarget]:
@@ -72,6 +77,7 @@ def installed_wheel(wheel_path: Path, entrypoint: str) -> Iterator[RunTarget]:
             cwd=work_dir,
             env=env,
         )
+
 
 def _run_setup_step(
     step: str,

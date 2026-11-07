@@ -42,6 +42,7 @@ SUITE = {
     ],
 }
 
+
 def fake_process(exit_code=0, stdout="", stderr="", failure=None):
     def run(*args, **kwargs):
         return ProcessResult(
@@ -54,13 +55,16 @@ def fake_process(exit_code=0, stdout="", stderr="", failure=None):
 
     return run
 
+
 def write_suite(tmp_path):
     path = tmp_path / "suite.json"
     path.write_text(json.dumps(SUITE), encoding="utf-8")
     return path
 
+
 def test_parse_target_splits_snap_and_app():
     assert parse_snap_target("packpilot-logsum.logsum") == ("packpilot-logsum", "logsum")
+
 
 @pytest.mark.parametrize(
     "target",
@@ -70,6 +74,7 @@ def test_parse_target_rejects_anything_else(target):
     with pytest.raises(SnapTargetError, match="snap-name.app-name"):
         parse_snap_target(target)
 
+
 def test_parse_info_records_identity():
     assert parse_snap_info("packpilot-logsum", SNAP_INFO) == {
         "snap_name": "packpilot-logsum",
@@ -78,19 +83,25 @@ def test_parse_info_records_identity():
         "snap_confinement": "strict",
     }
 
+
 def test_parse_info_rejects_a_snap_that_is_only_in_the_store():
     with pytest.raises(SnapTargetError, match="not installed"):
         parse_snap_info("hello", "name: hello\nsummary: from the store\n")
 
+
 def test_describe_reports_a_missing_snap_command(monkeypatch):
-    monkeypatch.setattr(snap, "run_command", fake_process(exit_code=None, failure=COMMAND_NOT_FOUND))
+    monkeypatch.setattr(
+        snap, "run_command", fake_process(exit_code=None, failure=COMMAND_NOT_FOUND)
+    )
     with pytest.raises(SnapTargetError, match="could not query snapd"):
         describe_snap("packpilot-logsum.logsum")
+
 
 def test_describe_reports_an_unknown_snap(monkeypatch):
     monkeypatch.setattr(snap, "run_command", fake_process(exit_code=1, stderr="no snap found\n"))
     with pytest.raises(SnapTargetError, match="no snap found"):
         describe_snap("packpilot-logsum.logsum")
+
 
 def test_installed_snap_builds_the_command_and_cleans_up(monkeypatch):
     monkeypatch.setenv("PYTHONPATH", "/somewhere/else")
@@ -101,6 +112,7 @@ def test_installed_snap_builds_the_command_and_cleans_up(monkeypatch):
         cwd = target.cwd
     assert not cwd.exists()
 
+
 def use_fake_snap(monkeypatch, tmp_path, code):
     @contextmanager
     def fake_installed_snap(target):
@@ -109,11 +121,20 @@ def use_fake_snap(monkeypatch, tmp_path, code):
     monkeypatch.setattr(cli, "installed_snap", fake_installed_snap)
     monkeypatch.setattr(snap, "run_command", fake_process(stdout=SNAP_INFO))
 
+
 def test_verify_snap_passes_and_records_the_snap_identity(monkeypatch, tmp_path):
     use_fake_snap(monkeypatch, tmp_path, "pass")
     report_path = tmp_path / "snap.json"
     exit_code = main(
-        ["verify", "snap", "packpilot-logsum.logsum", "--cases", str(write_suite(tmp_path)), "--report", str(report_path)]
+        [
+            "verify",
+            "snap",
+            "packpilot-logsum.logsum",
+            "--cases",
+            str(write_suite(tmp_path)),
+            "--report",
+            str(report_path),
+        ]
     )
     assert exit_code == 0
 
@@ -124,16 +145,23 @@ def test_verify_snap_passes_and_records_the_snap_identity(monkeypatch, tmp_path)
     assert report["target"]["entrypoint"] == "logsum"
     assert report["summary"] == {"passed": 1, "failed": 0}
 
+
 def test_verify_snap_exits_one_when_a_case_fails(monkeypatch, tmp_path):
     use_fake_snap(monkeypatch, tmp_path, "raise SystemExit(3)")
-    exit_code = main(["verify", "snap", "packpilot-logsum.logsum", "--cases", str(write_suite(tmp_path))])
+    exit_code = main(
+        ["verify", "snap", "packpilot-logsum.logsum", "--cases", str(write_suite(tmp_path))]
+    )
     assert exit_code == 1
+
 
 def test_verify_snap_exits_two_when_the_app_does_not_match_the_suite(monkeypatch, tmp_path, capsys):
     use_fake_snap(monkeypatch, tmp_path, "pass")
-    exit_code = main(["verify", "snap", "packpilot-logsum.other", "--cases", str(write_suite(tmp_path))])
+    exit_code = main(
+        ["verify", "snap", "packpilot-logsum.other", "--cases", str(write_suite(tmp_path))]
+    )
     assert exit_code == 2
     assert "does not match suite entrypoint" in capsys.readouterr().err
+
 
 def test_verify_snap_exits_two_for_a_bad_target(tmp_path, capsys):
     exit_code = main(["verify", "snap", "not-a-target", "--cases", str(write_suite(tmp_path))])

@@ -7,6 +7,7 @@ from packpilot.report import build_report, print_summary, report_passed, write_r
 
 TARGET = {"wheel_filename": "logsum-0.1.0-py3-none-any.whl", "wheel_sha256": "abc123"}
 
+
 def make_results(status=PASSED, reason=None, detail=None, stderr=""):
     case = CaseResult(
         name="sample",
@@ -23,8 +24,10 @@ def make_results(status=PASSED, reason=None, detail=None, stderr=""):
     summary = {"passed": 1, "failed": 0} if status == PASSED else {"passed": 0, "failed": 1}
     return VerificationReport(schema_version=1, cases=[case], summary=summary)
 
+
 def passed_setup():
     return SetupResult(status=PASSED, duration_seconds=1.5)
+
 
 def failed_setup():
     return SetupResult(
@@ -33,6 +36,7 @@ def failed_setup():
         reason="install_failed",
         detail="pip said no",
     )
+
 
 def test_report_contains_the_required_identity_and_environment():
     report = build_report("wheel", TARGET, passed_setup(), make_results())
@@ -46,10 +50,12 @@ def test_report_contains_the_required_identity_and_environment():
         "runner_python_executable",
     }
 
+
 def test_timestamp_is_utc():
     report = build_report("wheel", TARGET, passed_setup(), make_results())
     timestamp = datetime.fromisoformat(report["timestamp"])
     assert timestamp.utcoffset() == timedelta(0)
+
 
 def test_case_evidence_is_included():
     results = make_results(FAILED, "exit_code_mismatch", "expected 0, got 1", "boom\n")
@@ -62,6 +68,7 @@ def test_case_evidence_is_included():
     assert case["reason"] == "exit_code_mismatch"
     assert case["detail"] == "expected 0, got 1"
 
+
 def test_setup_failure_has_details_and_no_cases():
     report = build_report("wheel", TARGET, failed_setup(), None)
     assert report["setup"]["reason"] == "install_failed"
@@ -69,17 +76,20 @@ def test_setup_failure_has_details_and_no_cases():
     assert report["cases"] == []
     assert report["summary"] == {"passed": 0, "failed": 0}
 
+
 def test_report_passed_requires_setup_and_all_cases_to_pass():
     assert report_passed(build_report("wheel", TARGET, passed_setup(), make_results()))
     failed_case = make_results(FAILED, "stdout_mismatch", "different")
     assert not report_passed(build_report("wheel", TARGET, passed_setup(), failed_case))
     assert not report_passed(build_report("wheel", TARGET, failed_setup(), None))
 
+
 def test_write_report_creates_folders_and_valid_json(tmp_path):
     report = build_report("wheel", TARGET, passed_setup(), make_results())
     path = tmp_path / "nested" / "reports" / "wheel.json"
     write_report(report, path)
     assert json.loads(path.read_text(encoding="utf-8")) == report
+
 
 def test_print_summary_uses_stderr_only(capsys):
     results = make_results(FAILED, "exit_code_mismatch", "expected 0, got 1", "boom\n")

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+
 from packpilot.models import CaseResult, ProcessResult, TestCase, TestSuite, VerificationReport
 from packpilot.process import TIMEOUT, run_command
 
@@ -12,6 +13,7 @@ EXIT_CODE_MISMATCH = "exit_code_mismatch"
 INVALID_JSON = "invalid_json"
 STDOUT_MISMATCH = "stdout_mismatch"
 STDERR_MISMATCH = "stderr_mismatch"
+
 
 def check_result(case: TestCase, process: ProcessResult) -> tuple[str, str] | None:
     expected = case.expect
@@ -45,11 +47,12 @@ def check_result(case: TestCase, process: ProcessResult) -> tuple[str, str] | No
 
     return None
 
+
 def run_case(
-        case: TestCase,
-        command_prefix: list[str],
-        cwd: Path | None = None,
-        env: dict[str, str] | None = None,
+    case: TestCase,
+    command_prefix: list[str],
+    cwd: Path | None = None,
+    env: dict[str, str] | None = None,
 ) -> CaseResult:
     process = run_command(
         [*command_prefix, *case.args],
@@ -74,11 +77,12 @@ def run_case(
         detail=detail,
     )
 
+
 def run_suite(
-        suite: TestSuite,
-        command_prefix: list[str],
-        cwd: Path | None = None,
-        env: dict[str, str] | None = None,
+    suite: TestSuite,
+    command_prefix: list[str],
+    cwd: Path | None = None,
+    env: dict[str, str] | None = None,
 ) -> VerificationReport:
     results = [run_case(case, command_prefix, cwd=cwd, env=env) for case in suite.cases]
     passed = sum(1 for result in results if result.status == PASSED)
@@ -88,6 +92,7 @@ def run_suite(
         cases=results,
         summary={"passed": passed, "failed": len(results) - passed},
     )
+
 
 def _canonical(value: object) -> str:
     return json.dumps(value, sort_keys=True)

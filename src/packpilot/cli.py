@@ -23,9 +23,11 @@ EXIT_PASSED = 0
 EXIT_VERIFICATION_FAILED = 1
 EXIT_INVALID_RUN = 2
 
+
 def main(argv: list[str] | None = None) -> int:
     args = _build_parser().parse_args(argv)
     return args.handler(args)
+
 
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
@@ -51,6 +53,7 @@ def _build_parser() -> argparse.ArgumentParser:
     snap.set_defaults(handler=_verify_snap)
 
     return parser
+
 
 def _verify_wheel(args: argparse.Namespace) -> int:
     try:
@@ -120,9 +123,11 @@ def _finish(report: dict, report_path: Path | None) -> int:
 
     return EXIT_PASSED if report_passed(report) else EXIT_VERIFICATION_FAILED
 
+
 def _invalid_run(message: str) -> int:
     print(f"packpilot: error: {message}", file=sys.stderr)
     return EXIT_INVALID_RUN
+
 
 if __name__ == "__main__":
     raise SystemExit(main())

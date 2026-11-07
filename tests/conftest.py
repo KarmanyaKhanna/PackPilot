@@ -8,6 +8,7 @@ import pytest
 LOGSUM_SOURCE = Path(__file__).resolve().parents[1] / "examples" / "logsum"
 PACKAGE_DATA_DECLARATION = '[tool.setuptools.package-data]\nlogsum = ["data/*.json"]\n'
 
+
 def build_logsum(build_root, remove_package_data=False):
     source_copy = build_root / "source"
     shutil.copytree(
@@ -30,9 +31,11 @@ def build_logsum(build_root, remove_package_data=False):
     )
     return next(output_dir.glob("*.whl"))
 
+
 @pytest.fixture(scope="session")
 def logsum_wheel(tmp_path_factory):
     return build_logsum(tmp_path_factory.mktemp("logsum-build"))
+
 
 @pytest.fixture(scope="session")
 def broken_logsum_wheel(tmp_path_factory):

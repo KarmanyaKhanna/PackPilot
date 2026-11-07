@@ -1,9 +1,10 @@
 import argparse
-import sys
 import json
+import sys
 from importlib import resources
 
 from logsum.core import LineParseError, summarize
+
 
 def load_allowed_levels() -> list[str]:
     try:
@@ -12,19 +13,16 @@ def load_allowed_levels() -> list[str]:
             return json.load(f)
     except (FileNotFoundError, ModuleNotFoundError) as e:
         print(f"logsum: application resource error: {e}", file=sys.stderr)
-        raise SystemExit(1)
+        raise SystemExit(1) from e
+
 
 def main() -> int:
     parser = argparse.ArgumentParser(
         prog="logsum",
         description="Summarize log severities from standard input.",
     )
-    parser.add_argument(
-        "--version", action = "version", version = "logsum 0.1.0"
-    )
-    parser.add_argument(
-        "--json", action = "store_true", help = "print the summary as a JSON object"
-    )
+    parser.add_argument("--version", action="version", version="logsum 0.1.0")
+    parser.add_argument("--json", action="store_true", help="print the summary as a JSON object")
     args = parser.parse_args()
 
     allowed_levels = load_allowed_levels()
@@ -39,9 +37,10 @@ def main() -> int:
     if args.json:
         print(json.dumps(counts))
     else:
-        for level , count in counts.items():
+        for level, count in counts.items():
             print(f"{level}: {count}")
     return 0
+
 
 if __name__ == "__main__":
     raise SystemExit(main())
