@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import subprocess
 import time
+import os
 from pathlib import Path
 from packpilot.models import ProcessResult
 
 COMMAND_NOT_FOUND = "command_not_found"
 TIMEOUT = "timeout"
+_REMOVED_ENV_VARS = ("PYTHONPATH", "PYTHONHOME")
 
 def run_command(
         args: list[str],
@@ -52,6 +54,12 @@ def run_command(
         stderr=completed.stderr,
         duration_seconds=time.monotonic() - start,
     )
+
+def clean_environment() -> dict[str, str]:
+    env = dict(os.environ)
+    for name in _REMOVED_ENV_VARS:
+        env.pop(name, None)
+    return env
 
 def _as_text(output: str | bytes | None) -> str:
     if output is None:

@@ -9,6 +9,7 @@ from packpilot.cases import SuiteValidationError, load_suite
 from packpilot.engine import FAILED, PASSED, run_suite
 from packpilot.models import SetupResult
 from packpilot.report import build_report, print_summary, report_passed, write_report
+from packpilot.runners.snap import SnapTargetError, describe_snap, installed_snap
 from packpilot.runners.wheel import (
     INSTALL_FAILED,
     VenvCreationError,
@@ -43,6 +44,12 @@ def _build_parser() -> argparse.ArgumentParser:
     wheel.add_argument("--report", type=Path, help="where to write the JSON report")
     wheel.set_defaults(handler=_verify_wheel)
 
+    snap = targets.add_parser("snap", help="verify a snap that is already installed")
+    snap.add_argument("target", help="installed command as snap-name.app-name")
+    snap.add_argument("--cases", type=Path, required=True, help="path to the JSON test suite")
+    snap.add_argument("--report", type=Path, help="where to write the JSON report")
+    snap.set_defaults(handler=_verify_snap)
+
     return parser
 
 def _verify_wheel(args: argparse.Namespace) -> int:
@@ -74,14 +81,42 @@ def _verify_wheel(args: argparse.Namespace) -> int:
             detail=str(e),
         )
 
-    report = build_report("wheel", target, setup, results)
+    return _finish(build_report("wheel", target, setup, results), args.report)
+
+
+def _verify_snap(args: argparse.Namespace) -> int:
+    try:
+        suite = load_suite(args.cases)
+        target = describe_snap(args.target)
+    except (SuiteValidationError, SnapTargetError) as e:
+        return _invalid_run(str(e))
+    if target["snap_app"] != suite.entrypoint:
+        return _invalid_run(
+            f"snap app {target['snap_app']!r} does not match suite entrypoint {suite.entrypoint!r}"
+        )
+    target["entrypoint"] = suite.entrypoint
+
+    start = time.monotonic()
+    with installed_snap(args.target) as run_target:
+        setup = SetupResult(status=PASSED, duration_seconds=time.monotonic() - start)
+        results = run_suite(
+            suite,
+            run_target.command_prefix,
+            cwd=run_target.cwd,
+            env=run_target.env,
+        )
+
+    return _finish(build_report("snap", target, setup, results), args.report)
+
+
+def _finish(report: dict, report_path: Path | None) -> int:
     print_summary(report)
 
-    if args.report is not None:
+    if report_path is not None:
         try:
-            write_report(report, args.report)
+            write_report(report, report_path)
         except OSError as e:
-            return _invalid_run(f"could not write report to {args.report}: {e}")
+            return _invalid_run(f"could not write report to {report_path}: {e}")
 
     return EXIT_PASSED if report_passed(report) else EXIT_VERIFICATION_FAILED
 

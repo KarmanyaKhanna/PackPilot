@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 import sys
 import tempfile
 import hashlib
@@ -9,11 +8,10 @@ from contextlib import contextmanager
 from pathlib import Path
 
 from packpilot.models import RunTarget
-from packpilot.process import run_command
+from packpilot.process import clean_environment, run_command
 
 INSTALL_FAILED = "install_failed"
 SETUP_TIMEOUT_SECONDS = 120
-_REMOVED_ENV_VARS = ("PYTHONPATH", "PYTHONHOME")
 
 class WheelNotFoundError(ValueError):
     pass
@@ -38,7 +36,7 @@ def installed_wheel(wheel_path: Path, entrypoint: str) -> Iterator[RunTarget]:
     if not wheel.is_file():
         raise WheelNotFoundError(f"wheel file not found: {wheel}")
 
-    env = _clean_environment()
+    env = clean_environment()
 
     with tempfile.TemporaryDirectory(prefix="packpilot-") as temp_dir:
         root = Path(temp_dir).resolve()
@@ -74,12 +72,6 @@ def installed_wheel(wheel_path: Path, entrypoint: str) -> Iterator[RunTarget]:
             cwd=work_dir,
             env=env,
         )
-
-def _clean_environment() -> dict[str, str]:
-    env = dict(os.environ)
-    for name in _REMOVED_ENV_VARS:
-        env.pop(name, None)
-    return env
 
 def _run_setup_step(
     step: str,
