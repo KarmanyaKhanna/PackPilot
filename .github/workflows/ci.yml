@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  wheel:
+    name: Lint, test and verify the demo wheel
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Install PackPilot and dev tools
+        run: python -m pip install -e ".[dev]"
+
+      - name: Lint
+        run: |
+          ruff check .
+          ruff format --check .
+
+      - name: Run tests
+        run: python -m pytest -q -rs
+
+      - name: Build the demo wheel
+        run: python -m build --wheel --outdir dist/demo examples/logsum
+
+      - name: Verify the demo wheel
+        run: |
+          mkdir -p reports
+          packpilot verify wheel dist/demo/logsum-0.1.0-py3-none-any.whl \
+            --cases examples/cases.json \
+            --report reports/wheel-cli.json
+
+      - name: Upload the report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: packpilot-wheel-report
+          path: reports/wheel-cli.json
+          if-no-files-found: warn
