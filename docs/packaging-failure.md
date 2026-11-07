@@ -21,7 +21,7 @@ Installing doesn't catch it either. pip installs what the wheel contains and has
 
 ## Observed results
 
-Run on macOS 26.0, arm64, with Python 3.13.0 on 2026-11-06. This has not yet been run on Ubuntu.
+Run on macOS 26.0, arm64, with Python 3.13.0 on 2026-11-06. The automated version of this demonstration (`tests/test_packaging_failure.py`) also passes on Ubuntu 24.04.5, arm64, with Python 3.12.3. The results below are from the macOS run.
 
 | Check                                      | Broken wheel       | Fixed wheel        |
 | ------------------------------------------ | ------------------ | ------------------ |
