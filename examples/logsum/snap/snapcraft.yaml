@@ -1,0 +1,22 @@
+name: packpilot-logsum
+base: core24
+version: "0.1.0"
+summary: Summarize log severities from standard input
+description: |
+  A small command-line application used to demonstrate package verification.
+grade: stable
+confinement: strict
+
+platforms:
+  arm64:
+
+apps:
+  logsum:
+    command: bin/logsum
+
+parts:
+  logsum:
+    plugin: python
+    source: .
+    build-packages:
+      - python3-venv
